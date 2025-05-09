@@ -1,9 +1,8 @@
 #ifndef SCENE_H
 #define SCENE_H
+#include "portal/Cell.h"
 #include <memory>
 #include <vector>
-
-class Cell;
 
 class Scene {
 public:

@@ -21,6 +21,7 @@ public:
   const std::vector<std::shared_ptr<Renderable>> &getGeometry() const {
     return geometry;
   }
+  std::vector<std::shared_ptr<Renderable>> &getGeometry() { return geometry; }
 
 private:
   std::vector<std::shared_ptr<Renderable>> geometry;

@@ -5,7 +5,7 @@
 
 int main() {
   try {
-    App &app = App::getInstance();
+    App &app = App::instance();
     app.run();
   } catch (...) {
     throw;

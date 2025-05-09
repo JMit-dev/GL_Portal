@@ -5,19 +5,13 @@
 #include <memory>
 
 class Renderer;
-class Scene;
-class Camera;
+class SceneManager;
+class Controls;
+class DebugUI;
 
-/**
- * Top-level singleton that owns the window, ImGui context,
- * the scene graph and the high-level renderer.
- *
- * Usage:
- *     int main() { App::getInstance().run(); }
- */
 class App : private Window {
 public:
-  static App &getInstance();
+  static App &instance();
   void run(); ///< main loop (blocks until window close)
 
 private:
@@ -25,20 +19,21 @@ private:
   static constexpr int kHeight = 720;
   static constexpr char kTitle[] = "Portal Demo";
 
-  App();            ///< sets up GLFW window + ImGui
-  ~App() = default; ///< default – GLFW/ImGui cleaned up by base/Imgui
+  App();  ///< sets up window + subsystems
+  ~App(); ///< shuts down ImGui & GLFW
 
   App(const App &) = delete;
   App &operator=(const App &) = delete;
 
-  void initScene();           ///< create cells, portals, geometry
-  void renderFrame(float dt); ///< per-frame draw
+  // helpers
+  void renderFrame(float dt);
   static void framebufferSizeCallback(GLFWwindow *, int, int);
 
-  // TO DO
-  std::unique_ptr<Scene> scene;
+  // members
   std::unique_ptr<Renderer> renderer;
-  std::unique_ptr<Camera> camera;
+  std::unique_ptr<SceneManager> sceneMgr;
+  std::unique_ptr<Controls> controls;
+  std::unique_ptr<DebugUI> ui;
 };
 
 #endif

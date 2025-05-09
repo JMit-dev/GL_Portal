@@ -10,6 +10,8 @@ find_package(OpenGL REQUIRED)
 set(SRC_DIR      ${CMAKE_SOURCE_DIR}/src)
 set(INCLUDE_DIR  ${CMAKE_SOURCE_DIR}/include)
 set(IMGUI_DIR    ${CMAKE_SOURCE_DIR}/external/imgui)
+set(ASSIMP_DIR ${CMAKE_SOURCE_DIR}/external/assimp)
+add_subdirectory(${ASSIMP_DIR})
 
 file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS
      ${SRC_DIR}/*.cpp)
@@ -36,6 +38,7 @@ set(ALL_INCLUDE_DIRS
     ${INCLUDE_DIR}
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    ${ASSIMP_DIR}/include
     ${GLEW_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${OPENGL_EGL_INCLUDE_DIRS}
@@ -51,6 +54,7 @@ set(ALL_LIBRARIES
     OpenGL::GLU
     OpenGL::GLX
     OpenGL::EGL
+    assimp
 )
 
 set(ALL_COMPILE_DEFS

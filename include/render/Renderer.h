@@ -4,6 +4,7 @@
 
 class Scene;
 class Camera;
+class ModelShape;
 
 #include "render/PortalRenderer.h"
 
