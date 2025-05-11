@@ -1,6 +1,7 @@
 #include "app/DebugUI.h"
 #include "app/Controls.h"
 #include "render/Renderer.h"
+#include "shape/Texture.h"
 #include "util/SceneManager.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -18,10 +19,20 @@ static void DrawSettings(Renderer &renderer, Controls &c) {
     if (ImGui::Checkbox("MSAA", &msaa))
       msaa ? glEnable(GL_MULTISAMPLE) : glDisable(GL_MULTISAMPLE);
 
+    float aniso = Texture2D::anisotropy();
+    const float max = Texture2D::maxAnisotropy();
+
+    if (ImGui::SliderFloat("Anisotropy", &aniso,
+                           1.0f, // min
+                           max,  // max
+                           "%.1f", ImGuiSliderFlags_NoRoundToFormat)) {
+      Texture2D::setAnisotropy(aniso); // clamp inside
+    }
+
     if (ImGui::Checkbox("Wireframe", &wire))
       glPolygonMode(GL_FRONT_AND_BACK, wire ? GL_LINE : GL_FILL);
 
-    if (ImGui::Checkbox("V‑Sync (swap interval)", &vsync))
+    if (ImGui::Checkbox("V-Sync (swap interval)", &vsync))
       glfwSwapInterval(vsync ? 1 : 0);
 
     ImGui::SliderInt("Recursion depth", &renderer.recursionDepth, 0, 10);

@@ -39,6 +39,7 @@ set(ALL_INCLUDE_DIRS
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${ASSIMP_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/stb  
     ${GLEW_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${OPENGL_EGL_INCLUDE_DIRS}

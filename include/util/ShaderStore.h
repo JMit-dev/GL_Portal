@@ -19,8 +19,16 @@ public:
     return phongShader.get();
   }
 
+  Shader *textured() {
+    if (!texturedShader)
+      texturedShader = std::make_unique<Shader>(
+          "src/shader/textured.vert.glsl", "src/shader/textured.frag.glsl");
+    return texturedShader.get();
+  }
+
 private:
   ShaderStore() = default;
   std::unique_ptr<Shader> phongShader;
+  std::unique_ptr<Shader> texturedShader;
 };
 #endif

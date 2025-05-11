@@ -21,7 +21,7 @@ private:
   static void scrollCB(GLFWwindow *win, double /*x*/, double y);
 
   GLFWwindow *window;
-  Camera cam{glm::vec3(0.f, 0.f, 3.f)};
+  Camera cam{glm::vec3(0.f, 1.0f, 3.f)};
 
   // mouse interaction
   bool cursorCaptured{true};

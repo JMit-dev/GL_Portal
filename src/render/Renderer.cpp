@@ -5,6 +5,7 @@
 #include "render/PortalRenderer.h"
 #include "render/Renderer.h"
 #include "shape/ModelShape.h"
+#include "shape/TexturedQuad.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -28,6 +29,9 @@ void Renderer::draw(const Scene &scene, const Camera &cam) {
   for (const auto &geo : cell.getGeometry()) {
     if (auto *ms = dynamic_cast<ModelShape *>(geo.get()))
       ms->setViewProj(V, P, eye);
+
+    if (auto *tq = dynamic_cast<TexturedQuad *>(geo.get()))
+      tq->setViewProj(V, P);
 
     geo->render();
   }
