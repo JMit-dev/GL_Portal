@@ -10,7 +10,7 @@ class Controls {
 public:
   explicit Controls(GLFWwindow *win);
 
-  void update(float dt, Scene &scene); ///< call once per frame
+  void update(float dt); ///< call once per frame
 
   Camera &camera() { return cam; }
   const Camera &camera() const { return cam; }

@@ -33,10 +33,19 @@ public:
     return flatShader.get();
   }
 
+  Shader *portal_quad() {
+    if (!portal_quadShader)
+      portal_quadShader =
+          std::make_unique<Shader>("src/shader/portal_quad.vert.glsl",
+                                   "src/shader/portal_quad.frag.glsl");
+    return portal_quadShader.get();
+  }
+
 private:
   ShaderStore() = default;
   std::unique_ptr<Shader> phongShader;
   std::unique_ptr<Shader> texturedShader;
   std::unique_ptr<Shader> flatShader;
+  std::unique_ptr<Shader> portal_quadShader;
 };
 #endif

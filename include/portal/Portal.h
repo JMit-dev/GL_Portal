@@ -20,6 +20,8 @@ public:
 
   void setDestinationPortal(Portal *p) { returnPortal = p; }
   Portal *getDestinationPortal() const { return returnPortal; }
+  bool getFlipView() const { return _flipView; }
+  void setFlipView(bool b) { _flipView = b; }
 
 private:
   std::shared_ptr<Renderable> surface;
@@ -27,6 +29,7 @@ private:
   glm::mat4 toDest{1.f};
 
   Portal *returnPortal{nullptr};
+  bool _flipView = false;
 };
 
 #endif

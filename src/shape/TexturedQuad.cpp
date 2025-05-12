@@ -82,5 +82,25 @@ void TexturedQuad::render() {
 TexturedQuad::TexturedQuad(Shader *sh, std::shared_ptr<Texture2D> tex,
                            const glm::mat4 &M)
     : GLShape(sh), texture(std::move(tex)), modelMat(M) {
-  // nothing: user will override VAO and bind their own vertex data
+  // nothing: will override VAO and bind their own vertex data
+}
+
+TexturedQuad::TexturedQuad(Shader *sh, const glm::vec3 &P, const glm::vec3 &N_,
+                           float sx, float sy, std::shared_ptr<Texture2D> tex,
+                           const glm::mat4 &M)
+    : GLShape(sh), texture(std::move(tex)), modelMat(M), centre(P),
+      N(glm::normalize(N_)) {
+  bool tile = false;
+  auto v = buildQuad(P, N, sx, sy, tile);
+
+  glBindVertexArray(vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(v), v.data(), GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TVertex), (void *)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TVertex),
+                        (void *)offsetof(TVertex, uv));
+  glEnableVertexAttribArray(1);
+  glBindVertexArray(0);
 }

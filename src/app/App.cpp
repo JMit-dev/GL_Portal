@@ -2,6 +2,7 @@
 
 #include "app/Controls.h"
 #include "app/DebugUI.h"
+#include "render/PortalRenderer.h"
 #include "render/Renderer.h"
 #include "util/SceneManager.h"
 
@@ -23,7 +24,7 @@ App::App() : Window(kWidth, kHeight, kTitle) {
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
   ImGui_ImplGlfw_InitForOpenGL(pWindow, true);
-  ImGui_ImplOpenGL3_Init("#version 410");
+  ImGui_ImplOpenGL3_Init("#version 330");
 
   // Our subsystems
   renderer = std::make_unique<Renderer>(kWidth, kHeight);
@@ -54,7 +55,8 @@ void App::run() {
     last = now;
 
     Scene &scene = sceneMgr->currentSceneMutable();
-    controls->update(dt, scene);
+    controls->update(dt);
+    PortalUtils::checkPortalTeleport(scene, controls->camera());
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

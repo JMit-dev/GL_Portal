@@ -1,5 +1,5 @@
-#include "render/FramebufferUtils.h"
 #include "render/AdaptiveFramebuffer.h"
+#include "render/FramebufferUtils.h"
 
 void AdaptiveFramebuffer::allocate(int W, int H) {
   w = W;
@@ -31,5 +31,4 @@ void AdaptiveFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 void AdaptiveFramebuffer::setTargetFraction(float frac) {
   targetFraction = frac;
-  // TO DO
 }
