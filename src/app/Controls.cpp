@@ -1,7 +1,17 @@
 
 #include "app/Controls.h"
+#include "portal/Cell.h"
+#include "portal/Portal.h"
+#include "portal/Scene.h"
+#include "render/PortalRenderer.h"
+#include "shape/TexturedQuad.h"
+#include <glm/ext/vector_float3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <optional>
+
+static inline bool inFront(const glm::vec3 &p, const glm::vec3 &n, float d) {
+  return glm::dot(n, p) + d > 0.0f; // plane sign test
+}
 
 static std::optional<Camera_Movement> keyToMove(int key) {
   switch (key) {
@@ -34,7 +44,7 @@ bool Controls::keyPressed(GLFWwindow *w, int key) {
   return glfwGetKey(w, key) == GLFW_PRESS;
 }
 
-void Controls::update(float dt) {
+void Controls::update(float dt, Scene &scene) {
   // -------------------------------------------------
   // Key toggles  (1 = capture cursor, 2 = UI)
   // -------------------------------------------------
@@ -99,6 +109,31 @@ void Controls::update(float dt) {
     cam.ProcessMouseScroll(scrollOffset);
     scrollOffset = 0.f;
   }
+
+  Camera &cam = camera();
+
+  // ------- portal‑crossing check --------------------------------
+  Cell *cur = scene.viewpointCell();
+  for (const auto &p : cur->getPortals()) {
+    auto &quad = static_cast<const TexturedQuad &>(p->getSurface());
+    glm::vec3 n = quad.normal();
+    float d = quad.planeD();
+
+    bool wasFront = inFront(prevCamPos, n, d + 0.01f);
+    bool isFront = inFront(cam.Position, n, d - 0.01f);
+
+    if (wasFront && !isFront) // crossed plane
+    {
+      // switch active cell
+      scene.setViewpoint(p->destination());
+
+      // warp the camera into destination space
+      cam = PortalRenderer::throughPortal(cam, p->transform());
+
+      break; // only one portal / frame
+    }
+  }
+  prevCamPos = cam.Position;
 }
 
 void Controls::scrollCB(GLFWwindow *win, double /*x*/, double y) {

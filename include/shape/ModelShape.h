@@ -18,6 +18,8 @@ public:
   void setViewProj(const glm::mat4 &v, const glm::mat4 &p,
                    const glm::vec3 &eye);
 
+  void setModel(const glm::mat4 &m) { modelMat = m; }
+
 private:
   void loadNode(const aiNode *, const aiScene *, Shader *);
 
@@ -29,5 +31,11 @@ private:
   glm::vec3 eye{0.f};
 
   Shader *shader{nullptr};
+
+public:
+  Shader *getShader() const // read‑only accessor
+  {
+    return shader;
+  }
 };
 #endif

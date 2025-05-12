@@ -1,4 +1,4 @@
-#version 410 core
+#version 330 core
 out vec4 FragColor;
 
 in vec3 FragPos;
@@ -16,11 +16,14 @@ void main()
     // diffuse
     float diff = max(dot(norm, lightDir), 0.0);
 
-    // spec
+    // specular
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
 
-    vec3 color = (0.1 + diff)*vec3(0.8,0.5,0.3) + spec*lightColor;
-    FragColor = vec4(color,1.0);
+    // normal-based RGB color (convert from [-1,1] → [0,1])
+    vec3 normalColor = norm * 0.5 + 0.5;
+
+    vec3 color = (0.1 + diff) * normalColor + spec * lightColor;
+    FragColor = vec4(color, 1.0);
 }

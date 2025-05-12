@@ -44,6 +44,7 @@ App::~App() {
 // -----------------------------------------------------------------------------
 //  Main loop
 // -----------------------------------------------------------------------------
+
 void App::run() {
   double last = glfwGetTime();
 
@@ -52,18 +53,19 @@ void App::run() {
     float dt = static_cast<float>(now - last);
     last = now;
 
-    controls->update(dt); // poll input & move camera
+    Scene &scene = sceneMgr->currentSceneMutable();
+    controls->update(dt, scene);
 
-    // --- UI frame begin ---
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ui->draw(*renderer, *sceneMgr, *controls, dt); // all ImGui widgets
+    ui->draw(*renderer, *sceneMgr, *controls, dt);
+
+    sceneMgr->update(static_cast<float>(now));
 
     renderFrame(dt);
 
-    // --- UI frame end ---
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

@@ -1,17 +1,22 @@
 #ifndef UTIL_TEXTURE_H
 #define UTIL_TEXTURE_H
+#include <GL/glext.h>
 #include <glad/glad.h>
 #include <string>
 #include <utility>
 
 class Texture2D {
 public:
-public:
   static float anisotropy();        // 1 … max (read‑only)
   static void setAnisotropy(float); // clamped setter
   static float maxAnisotropy() { return s_maxAniso; }
 
   explicit Texture2D(std::string path);
+  Texture2D(std::string path, bool clamp)
+      : file(std::move(path)), clampWrap(clamp) {
+    if (s_maxAniso == 1.0f)
+      glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &s_maxAniso);
+  }
 
   void bind(int unit = 0) const {
     if (id == 0)
@@ -41,10 +46,11 @@ public:
   }
 
 private:
-  void upload() const; // ← implementation below
+  void upload() const;
 
   mutable GLuint id = 0;
   std::string file;
+  bool clampWrap = false;
 
   static float s_maxAniso;
   static float s_aniso;

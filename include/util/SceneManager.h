@@ -1,123 +1,218 @@
 #ifndef SCENE_MANAGER_H
 #define SCENE_MANAGER_H
 
+#include "portal/Portal.h"
 #include "portal/Scene.h"
 #include "shape/ModelShape.h"
+#include "shape/Skybox.h"
+#include "shape/TexturedBox.h"
 #include "shape/TexturedQuad.h"
 #include "util/ResourceCache.h"
 #include "util/Shader.h"
 #include "util/ShaderStore.h"
-#include <glm/ext/quaternion_geometric.hpp>
-#include <glm/ext/vector_float3.hpp>
-#include <iostream>
-#include <memory>
-#include <vector>
+#include <glm/gtc/matrix_transform.hpp>
+#include <random>
 
 class SceneManager {
 public:
   SceneManager() {
-    scenes.resize(6); // allocate empty slots only
-                      // nothing heavy happens here
+    SceneBuild result = makePortalDemoScene();
+    scene = std::move(result.scene);
+    animatedTeapot = std::move(result.animatedTeapot);
+    fallingCubes = std::move(result.fallingCubes);
   }
 
-  // -----------------------------------------------------------------
-  // accessor
-  // -----------------------------------------------------------------
-  const Scene &currentScene() {
-    // build on demand
-    if (!scenes[curIndex])
-      buildScene(curIndex);
-    return *scenes[curIndex];
-  }
+  const Scene &currentScene() const { return *scene; }
 
-  void select(std::size_t i) { curIndex = i % scenes.size(); }
+  Scene &currentSceneMutable() { return *scene; }
 
-private:
-  void buildScene(std::size_t idx) {
-    switch (idx) {
-    case 0:
-      scenes[idx] = makeMirrorHallway();
-      break;
-    case 1:
-      scenes[idx] = makeTeapotScene();
-      break;
-    default:
-      scenes[idx] = makeEmptyScene();
-      break;
+  void update(float time) {
+    // Animate teapot
+    if (animatedTeapot) {
+      float angle = glm::radians(time * 30.f);
+      float bob = 0.05f * sinf(time * 2.f);
+      glm::mat4 model =
+          glm::translate(glm::mat4(1.f), glm::vec3(-1.5f, 0.15f + bob, -1.5f));
+      model = glm::rotate(model, angle, glm::vec3(0.f, 1.f, 0.f));
+      model = glm::scale(model, glm::vec3(0.07f));
+      animatedTeapot->setModel(model);
+    }
+
+    // Animate falling cubes
+    float fallSpeed = 5.f;
+    float rotateSpeed = 0.1f;
+
+    for (auto &fc : fallingCubes) {
+      fc.y -= fc.fallSpeed * 0.016f;
+      fc.angle += fc.rotationSpeed * 0.016f;
+
+      if (fc.y < -50.f) {
+        fc.y = 50.f;
+        fc.x = randomXZ() + 0.f;
+        fc.z = randomXZ() + 120.f;
+
+        // Avoid platform area again on respawn
+        if (std::abs(fc.x - 0.f) < 3.f && std::abs(fc.z - 120.f) < 3.f) {
+          fc.x += (fc.x > 0.f ? 1.f : -1.f) * 4.f;
+          fc.z += (fc.z > 120.f ? 1.f : -1.f) * 4.f;
+        }
+      }
+
+      glm::mat4 model =
+          glm::translate(glm::mat4(1.f), glm::vec3(fc.x, fc.y, fc.z));
+      model = glm::rotate(model, fc.angle, fc.rotationAxis);
+      model = glm::scale(model, glm::vec3(2.0f));
+
+      for (auto &quad : fc.box->getFaces())
+        quad->setModel(model);
     }
   }
 
-  static inline glm::vec3 inward(glm::vec3 n, glm::vec3 camDir = {0, 0, 1}) {
-    // If the normal points roughly away from the corridor centre (‑Z),
-    // flip it so the quad faces the inside.
-    return (glm::dot(n, camDir) < 0.f) ? -n : n;
-  }
+private:
+  std::unique_ptr<Scene> scene;
+  std::shared_ptr<ModelShape> animatedTeapot;
 
-  static std::unique_ptr<Scene> makeEmptyScene() {
-    auto s = std::make_unique<Scene>();
-    s->createCell();
-    s->setViewpoint(s->cells().front().get());
-    return s;
-  }
+  struct FallingCube {
+    std::shared_ptr<TexturedBox> box;
+    float x, y, z;
+    float angle;
+    float fallSpeed;
+    glm::vec3 rotationAxis;
+    float rotationSpeed;
+  };
 
-  static std::unique_ptr<Scene> makeTeapotScene() {
-    auto s = std::make_unique<Scene>();
-    Cell *cell = s->createCell();
-    s->setViewpoint(cell);
+  std::vector<FallingCube> fallingCubes;
 
-    Shader *phong = ShaderStore::inst().phong();
+  struct SceneBuild {
+    std::unique_ptr<Scene> scene;
+    std::shared_ptr<ModelShape> animatedTeapot;
+    std::vector<FallingCube> fallingCubes;
+  };
 
-    auto teapot = std::make_shared<ModelShape>(
-        phong, "rsrc/models/teapot.obj",
-        glm::scale(glm::mat4(1.f), glm::vec3(0.5f)));
-    cell->getGeometry().push_back(teapot);
-    return s;
-  }
+  static SceneBuild makePortalDemoScene() {
+    SceneBuild out;
 
-  static std::unique_ptr<Scene> makeMirrorHallway() {
-    auto scene = std::make_unique<Scene>();
-    Cell *cell = scene->createCell();
-    scene->setViewpoint(cell);
-
+    out.scene = std::make_unique<Scene>();
+    Shader *skySh = ShaderStore::inst().textured();
     Shader *texSh = ShaderStore::inst().textured();
-    auto check = ResourceCache::inst().texture("rsrc/textures/checker.png");
+    Shader *phong = ShaderStore::inst().phong();
+    auto chk = ResourceCache::inst().texture("rsrc/textures/checker.png");
+    std::vector<std::string> texturePaths = {
+        "rsrc/textures/adachi.png", "rsrc/textures/awesomeface.png",
+        "rsrc/textures/box.jpg",    "rsrc/textures/cobblestone.png",
+        "rsrc/textures/dirt.png",   "rsrc/textures/metal.jpg"};
 
-    /*  inside extents ( full sizes )  */
-    const float W = 4.0f; // width   (X)
-    const float L = 8.0f; // length  (Z)
-    const float H = 2.5f; // height  (Y)
+    std::vector<std::shared_ptr<Texture2D>> cubeTextures;
+    for (const auto &path : texturePaths) {
+      cubeTextures.push_back(
+          ResourceCache::inst().texture(path, true)); // clamp = true
+    }
 
-    /*  helper: centre/normal + *half*‑sizes  */
-    auto addQuad = [&](glm::vec3 centre, glm::vec3 normal, float fullSX,
-                       float fullSY) {
-      cell->getGeometry().push_back(
-          std::make_shared<TexturedQuad>(texSh, centre,
-                                         normal,        // already inward
-                                         fullSX * 0.5f, // half‑sizes only once!
-                                         fullSY * 0.5f, check));
-    };
+    float PW = 4.f, PH = 0.1f, PD = 4.f;
 
-    /* coordinate system: +Y up, +Z forward, +X right
-       we centre the corridor on the origin so every half‑size is ± value */
-    const float hx = W * 0.5f;
-    const float hy = H * 0.5f;
-    const float hz = L * 0.5f;
+    // ── Scene A (origin) ─────────────────────────────
+    Cell *cell = out.scene->createCell();
+    out.scene->setViewpoint(cell);
 
-    /* ─────────── six faces ─────────── */
-    addQuad({0, -hy, 0}, {0, 1, 0}, W, L); // floor
-    addQuad({0, hy, 0}, {0, -1, 0}, W, L); // ceiling
+    std::array<std::shared_ptr<Texture2D>, 6> skyFaces = {
+        ResourceCache::inst().texture("rsrc/textures/px.png", true),
+        ResourceCache::inst().texture("rsrc/textures/nx.png", true),
+        ResourceCache::inst().texture("rsrc/textures/ny.png", true),
+        ResourceCache::inst().texture("rsrc/textures/py.png", true),
+        ResourceCache::inst().texture("rsrc/textures/pz.png", true),
+        ResourceCache::inst().texture("rsrc/textures/nz.png", true)};
 
-    addQuad({-hx, 0, 0}, {1, 0, 0}, L, H); // left wall  (+X normal)
-    addQuad({hx, 0, 0}, {-1, 0, 0}, L, H); // right wall (–X normal)
+    auto skyA = std::make_shared<Skybox>(skySh, skyFaces);
+    cell->getGeometry().push_back(skyA);
 
-    /* leave the front (+Z) empty for a portal; put a solid back wall at –Z */
-    addQuad({0, 0, -hz}, {0, 0, 1}, W, H); // back wall (+Z normal)
+    auto platformA = std::make_shared<TexturedBox>(
+        texSh, glm::vec3(0.f, PH / 2.f, 0.f), PW, PH, PD, chk, true);
+    cell->getGeometry().push_back(platformA);
 
-    return scene;
+    auto suzanne = std::make_shared<ModelShape>(
+        phong, "rsrc/models/suzanne.obj",
+        glm::translate(glm::mat4(1.f), glm::vec3(0.f, PH + 0.2f, 0.f)) *
+            glm::scale(glm::mat4(1.f), glm::vec3(0.2f)));
+    cell->getGeometry().push_back(suzanne);
+
+    out.animatedTeapot = std::make_shared<ModelShape>(
+        phong, "rsrc/models/teapot.obj", glm::mat4(1.f));
+    cell->getGeometry().push_back(out.animatedTeapot);
+
+    // ── Scene B (offset) ─────────────────────────────
+    const glm::vec3 offset(0.f, 0.f, 120.f);
+    const glm::vec3 platformCenterB = glm::vec3(0.f, PH / 2.f, 0.f) + offset;
+
+    std::array<std::shared_ptr<Texture2D>, 6> skyFaces1 = {
+        ResourceCache::inst().texture("rsrc/textures/px1.png", true),
+        ResourceCache::inst().texture("rsrc/textures/nx1.png", true),
+        ResourceCache::inst().texture("rsrc/textures/ny1.png", true),
+        ResourceCache::inst().texture("rsrc/textures/py1.png", true),
+        ResourceCache::inst().texture("rsrc/textures/pz1.png", true),
+        ResourceCache::inst().texture("rsrc/textures/nz1.png", true)};
+
+    auto skyB = std::make_shared<Skybox>(skySh, skyFaces1);
+    for (auto &face : skyB->getFaces()) {
+      glm::mat4 m = face->model();
+      m = glm::translate(glm::mat4(1.f), offset) * m;
+      face->setModel(m);
+      cell->getGeometry().push_back(face);
+    }
+
+    auto platformB = std::make_shared<TexturedBox>(texSh, platformCenterB, PW,
+                                                   PH, PD, chk, true);
+    cell->getGeometry().push_back(platformB);
+
+    // ── Falling cubes ────────────────────────────────
+    std::mt19937 rng{std::random_device{}()};
+    std::uniform_real_distribution<float> distXZ(-45.f, 45.f);
+    std::uniform_real_distribution<float> distY(40.f, 50.f);
+    std::uniform_real_distribution<float> distSpeed(5.0f, 10.0f);
+    std::uniform_real_distribution<float> distSpin(2.0f, 6.0f);
+    std::uniform_real_distribution<float> distAxis(-1.f, 1.f);
+
+    for (int i = 0; i < 1000; ++i) {
+      float x = distXZ(rng) + offset.x;
+      float z = distXZ(rng) + offset.z;
+      float y = distY(rng) + offset.y;
+
+      // Avoid platform area at Scene B
+      if (std::abs(x - platformCenterB.x) < 3.f &&
+          std::abs(z - platformCenterB.z) < 3.f) {
+        x += (x > platformCenterB.x ? 1.f : -1.f) * 4.f;
+        z += (z > platformCenterB.z ? 1.f : -1.f) * 4.f;
+      }
+
+      float cubeSize = 0.5f;
+      auto texture = cubeTextures[rng() % cubeTextures.size()];
+      auto box = std::make_shared<TexturedBox>(texSh, glm::vec3(0.f), cubeSize,
+                                               cubeSize, cubeSize, texture);
+
+      glm::vec3 axis = glm::normalize(
+          glm::vec3(distAxis(rng), distAxis(rng), distAxis(rng)));
+      float initialAngle = 0.f;
+
+      glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(x, y, z));
+      model = glm::rotate(model, initialAngle, axis);
+      model = glm::scale(model, glm::vec3(2.0f));
+
+      for (auto &quad : box->getFaces())
+        quad->setModel(model);
+
+      cell->getGeometry().push_back(box);
+
+      out.fallingCubes.push_back(FallingCube{
+          box, x, y, z, initialAngle, distSpeed(rng), axis, distSpin(rng)});
+    }
+
+    return out;
   }
 
-  std::vector<std::unique_ptr<Scene>> scenes;
-  std::size_t curIndex{0};
+  static float randomXZ() {
+    static std::mt19937 rng{std::random_device{}()};
+    static std::uniform_real_distribution<float> dist(-45.f, 45.f);
+    return dist(rng);
+  }
 };
 
-#endif
+#endif // SCENE_MANAGER_H

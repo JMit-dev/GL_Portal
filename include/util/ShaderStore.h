@@ -26,9 +26,17 @@ public:
     return texturedShader.get();
   }
 
+  Shader *flatWhite() {
+    if (!flatShader)
+      flatShader = std::make_unique<Shader>("src/shader/flat.vert.glsl",
+                                            "src/shader/flat.frag.glsl");
+    return flatShader.get();
+  }
+
 private:
   ShaderStore() = default;
   std::unique_ptr<Shader> phongShader;
   std::unique_ptr<Shader> texturedShader;
+  std::unique_ptr<Shader> flatShader;
 };
 #endif

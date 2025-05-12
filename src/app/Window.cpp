@@ -14,7 +14,6 @@ Window::Window(int width, int height, const char *title) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
-
   // Create the window
   pWindow = glfwCreateWindow(width, height, title, nullptr, nullptr);
   if (!pWindow) {

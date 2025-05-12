@@ -2,13 +2,15 @@
 #define CONTROLS_H
 
 #include "app/Camera.h"
+#include "portal/Scene.h"
 #include <GLFW/glfw3.h>
+#include <glm/ext/vector_float3.hpp>
 
 class Controls {
 public:
   explicit Controls(GLFWwindow *win);
 
-  void update(float dt); ///< call once per frame
+  void update(float dt, Scene &scene); ///< call once per frame
 
   Camera &camera() { return cam; }
   const Camera &camera() const { return cam; }
@@ -21,7 +23,7 @@ private:
   static void scrollCB(GLFWwindow *win, double /*x*/, double y);
 
   GLFWwindow *window;
-  Camera cam{glm::vec3(0.f, 1.0f, 3.f)};
+  Camera cam{glm::vec3(0.f, 1.0f, 0.f)};
 
   // mouse interaction
   bool cursorCaptured{true};
@@ -34,6 +36,7 @@ private:
 
   // edge detection
   bool onePrev{false}, twoPrev{false};
+  glm::vec3 prevCamPos{0.0f};
 };
 
 #endif

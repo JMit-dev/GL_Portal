@@ -19,15 +19,10 @@ static void DrawSettings(Renderer &renderer, Controls &c) {
     if (ImGui::Checkbox("MSAA", &msaa))
       msaa ? glEnable(GL_MULTISAMPLE) : glDisable(GL_MULTISAMPLE);
 
-    float aniso = Texture2D::anisotropy();
-    const float max = Texture2D::maxAnisotropy();
-
-    if (ImGui::SliderFloat("Anisotropy", &aniso,
-                           1.0f, // min
-                           max,  // max
-                           "%.1f", ImGuiSliderFlags_NoRoundToFormat)) {
-      Texture2D::setAnisotropy(aniso); // clamp inside
-    }
+    float aniso = Texture2D::anisotropy(); // current
+    float maxAniso = Texture2D::maxAnisotropy();
+    if (ImGui::SliderFloat("Anisotropy", &aniso, 1.0f, maxAniso, "%.1f"))
+      Texture2D::setAnisotropy(aniso);
 
     if (ImGui::Checkbox("Wireframe", &wire))
       glPolygonMode(GL_FRONT_AND_BACK, wire ? GL_LINE : GL_FILL);
@@ -65,44 +60,19 @@ static void DrawSettings(Renderer &renderer, Controls &c) {
   }
 }
 
-void DebugUI::draw(Renderer &renderer, SceneManager &sm, Controls &c,
-                   float dt) {
+void DebugUI::draw(Renderer &renderer, SceneManager &, Controls &c, float dt) {
   if (!c.uiVisible())
     return;
 
-  // move window once to top‑right
   ImGuiIO &io = ImGui::GetIO();
   ImGui::SetNextWindowPos({io.DisplaySize.x - 10.f, 10.f}, ImGuiCond_Once,
                           {1.f, 0.f});
 
-  if (ImGui::Begin("Debug")) {
+  if (ImGui::Begin("Settings")) {
     ImGui::Text("FPS: %.1f", 1.0f / dt);
+    ImGui::Separator();
 
-    // ------------------ Tab Bar -------------------------------------
-    if (ImGui::BeginTabBar("Rooms")) {
-      // one tab per room
-      for (int i = 0; i < 6; ++i) {
-        char label[16];
-        sprintf(label, "Room %d", i);
-        if (ImGui::BeginTabItem(label)) {
-          if (i == 0) {
-            ImGui::Text("Teapot demo room");
-          } else {
-            ImGui::Text("Room %d not implemented yet.", i);
-          }
-          if (ImGui::Button("Switch to this room"))
-            sm.select(i);
-          ImGui::EndTabItem();
-        }
-      }
-
-      if (ImGui::BeginTabItem("Settings")) {
-        DrawSettings(renderer, c);
-        ImGui::EndTabItem();
-      }
-
-      ImGui::EndTabBar();
-    }
+    DrawSettings(renderer, c);
   }
   ImGui::End();
 }

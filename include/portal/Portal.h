@@ -1,11 +1,10 @@
 #ifndef PORTAL_H
 #define PORTAL_H
 
+#include "portal/Cell.h"
+#include "shape/Renderable.h"
 #include <glm/glm.hpp>
 #include <memory>
-
-class Renderable;
-class Cell;
 
 class Portal {
 public:
@@ -14,14 +13,20 @@ public:
       : surface(std::move(surface)), destCell(destination),
         toDest(transformToDst) {}
 
-  const Renderable &getSurface() const { return *surface; };
+  Renderable &getSurface() { return *surface; }
+  const Renderable &getSurface() const { return *surface; }
+  Cell *destination() const { return destCell; }
   const glm::mat4 &transform() const { return toDest; }
-  Cell *destination() { return destCell; }
+
+  void setDestinationPortal(Portal *p) { returnPortal = p; }
+  Portal *getDestinationPortal() const { return returnPortal; }
 
 private:
   std::shared_ptr<Renderable> surface;
   Cell *destCell{nullptr};
   glm::mat4 toDest{1.f};
+
+  Portal *returnPortal{nullptr};
 };
 
 #endif

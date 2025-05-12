@@ -15,26 +15,10 @@ Renderer::Renderer(int screenW, int screenH) : w(screenW), h(screenH) {
 }
 
 void Renderer::draw(const Scene &scene, const Camera &cam) {
-  // clear framebuffer each frame
-  glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClearColor(0.05f, 0.05f, 0.08f, 1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  const glm::mat4 V = cam.GetViewMatrix();
-  const glm::mat4 P =
-      glm::perspective(glm::radians(cam.Zoom), float(w) / h, 0.1f, 100.f);
-  const glm::vec3 eye = cam.Position;
-
-  // single‑cell scene for now
-  const auto &cell = *scene.viewpointCell();
-  for (const auto &geo : cell.getGeometry()) {
-    if (auto *ms = dynamic_cast<ModelShape *>(geo.get()))
-      ms->setViewProj(V, P, eye);
-
-    if (auto *tq = dynamic_cast<TexturedQuad *>(geo.get()))
-      tq->setViewProj(V, P);
-
-    geo->render();
-  }
+  portalRenderer->renderScene(scene, cam, recursionDepth);
 }
 
 void Renderer::resize(int newW, int newH) {

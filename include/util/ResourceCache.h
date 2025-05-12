@@ -13,14 +13,16 @@ public:
   }
 
   /// returns a *shared* texture; loads it the first time only
-  std::shared_ptr<Texture2D> texture(const std::string &path) {
-    auto it = texPool.find(path);
+  std::shared_ptr<Texture2D> texture(const std::string &path,
+                                     bool clamp = false) {
+    std::string key = clamp ? path + "#clamp" : path;
+
+    auto it = texPool.find(key);
     if (it != texPool.end())
       return it->second;
 
-    // first request -> create *after* GL context exists
-    auto tex = std::make_shared<Texture2D>(path);
-    texPool.emplace(path, tex);
+    auto tex = std::make_shared<Texture2D>(path, clamp);
+    texPool.emplace(key, tex);
     return tex;
   }
 
